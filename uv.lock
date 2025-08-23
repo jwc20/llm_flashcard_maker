@@ -497,13 +497,19 @@ name = "llm-flashcard-maker"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "datasets" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "jinja2" },
+    { name = "mlx" },
     { name = "mlx-lm", extra = ["train"] },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "datasets", specifier = ">=4.0.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "mlx", specifier = ">=0.28.0" },
     { name = "mlx-lm", extras = ["train"], specifier = ">=0.26.3" },
 ]
 
