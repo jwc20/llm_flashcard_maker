@@ -6,6 +6,8 @@ aiohttp==3.12.15
     # via fsspec
 aiosignal==1.4.0
     # via aiohttp
+anki==25.7.5
+    # via llm-flashcard-maker (pyproject.toml)
 annotated-types==0.7.0
     # via pydantic
 anyio==4.10.0
@@ -29,7 +31,11 @@ click==8.2.1
     #   typer
     #   uvicorn
 datasets==4.0.0
-    # via mlx-lm
+    # via
+    #   llm-flashcard-maker (pyproject.toml)
+    #   mlx-lm
+decorator==5.2.1
+    # via anki
 dill==0.3.8
     # via
     #   datasets
@@ -87,8 +93,11 @@ idna==3.10
     #   yarl
 jinja2==3.1.6
     # via
+    #   llm-flashcard-maker (pyproject.toml)
     #   fastapi
     #   mlx-lm
+markdown==3.8.2
+    # via anki
 markdown-it-py==4.0.0
     # via rich
 markupsafe==3.0.2
@@ -96,7 +105,9 @@ markupsafe==3.0.2
 mdurl==0.1.2
     # via markdown-it-py
 mlx==0.28.0
-    # via mlx-lm
+    # via
+    #   llm-flashcard-maker (pyproject.toml)
+    #   mlx-lm
 mlx-lm==0.26.3
     # via llm-flashcard-maker (pyproject.toml)
 mlx-metal==0.28.0
@@ -113,6 +124,8 @@ numpy==2.3.2
     #   mlx-lm
     #   pandas
     #   transformers
+orjson==3.11.2
+    # via anki
 packaging==25.0
     # via
     #   datasets
@@ -125,7 +138,9 @@ propcache==0.3.2
     #   aiohttp
     #   yarl
 protobuf==6.32.0
-    # via mlx-lm
+    # via
+    #   anki
+    #   mlx-lm
 pyarrow==21.0.0
     # via datasets
 pydantic==2.11.7
@@ -136,6 +151,8 @@ pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via rich
+pysocks==1.7.1
+    # via requests
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.1.1
@@ -155,6 +172,7 @@ regex==2025.7.34
     # via transformers
 requests==2.32.5
     # via
+    #   anki
     #   datasets
     #   huggingface-hub
     #   transformers
@@ -197,6 +215,7 @@ typer==0.16.1
 typing-extensions==4.14.1
     # via
     #   aiosignal
+    #   anki
     #   anyio
     #   fastapi
     #   huggingface-hub
