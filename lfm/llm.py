@@ -56,7 +56,9 @@ class Llm:
     def _load_model(self) -> None:
         try:
             if self._repo and not self._is_loaded:
-                self._model, self._tokenizer = load(self._repo)
+                # self._model, self._tokenizer = load(self._repo)
+                self._model, self._tokenizer = load(self._repo,
+                                                    adapter_path="../data_anomaly_adapters")
                 self._is_loaded = True
         except Exception as e:
             raise RuntimeError(f"Failed to load model from {self._repo}: {str(e)}")
@@ -79,9 +81,9 @@ class Llm:
             )
 
             result = []
-            
+
             for response in stream_generate(
-                self._model, self._tokenizer, formatted_prompt, max_tokens=512
+                    self._model, self._tokenizer, formatted_prompt, max_tokens=512
             ):
                 if response.finish_reason == "stop":
                     break
@@ -90,7 +92,7 @@ class Llm:
                 # if generated_text:
                 #     result.append(jsonpickle.decode(generated_text))
                 result.append(generated_text)
-            
+
             result_string = "".join(result)
             if result_string:
                 # Clean the string
@@ -106,9 +108,8 @@ class Llm:
                         if c == '[':
                             result_string = result_string[new_start_pos:]
                         else:
-                            new_start_pos += 1 
-                    
-                            
+                            new_start_pos += 1
+
                 if not result_string.endswith(']'):
                     new_end_pos = len(result_string) - 1
                     for c in result_string[::-1]:
@@ -116,9 +117,7 @@ class Llm:
                             result_string = result_string[:new_end_pos + 1]
                         else:
                             new_end_pos -= 1
-                
-                    
-                
+
                 try:
                     result = jsonpickle.decode(result_string)
                 except Exception as e:
@@ -126,8 +125,6 @@ class Llm:
                     result = []
             else:
                 result = []
-                
-                
 
             return result
 
@@ -152,18 +149,13 @@ if __name__ == "__main__":
 
     data = [
         {"name": "John Doe", "city": "new york", "state": "new york"},  # Case and format issues
-        {"name": "Jane Smith", "city": "albuquerque"},  # Missing state field
-        {"name": "Sam Brown", "city": "ny", "state": "NY"},  # Inconsistent state abbreviation
+        {"name": "Sam Brown", "city": "dallas", "state": "texas"},  # Inconsistent state abbreviation
         {"name": "John Doe", "city": "new york", "state": "new york"},  # Duplicate entry
     ]
 
-
-    
-    llm = Llm()    
+    llm = Llm()
     _prompt = "Process the following data: \n\n" + jsonpickle.dumps(data)
-
 
     data = llm.generate(system_prompt, _prompt)
     people = data
     print(jsonpickle.encode(people, indent=4))
-    
