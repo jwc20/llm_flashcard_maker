@@ -1,9 +1,8 @@
 from mlx_lm import load, stream_generate
-from typing import Optional, List, Dict, Any
 
 
 class Llm:
-    def __init__(self, repo: Optional[str] = None):
+    def __init__(self, repo: str | None = None):
         self._repo = repo
         self._check_repo()
 
@@ -27,7 +26,7 @@ class Llm:
         except Exception as e:
             raise RuntimeError(f"Failed to load model from {self._repo}: {str(e)}")
 
-    def generate(self, prompt: str) -> Optional[str]:
+    def generate(self, prompt: str) -> str | None:
         try:
             self._check_prompt(prompt)
             self._load_model()
