@@ -1,70 +1,65 @@
 from mlx_lm import load, stream_generate
+from typing import Optional, List, Dict, Any
 
 
 class Llm:
-    def __init__(self, repo: str | None = None):
-        # self.prompt = prompt
-        # self._check_prompt()
-
+    def __init__(self, repo: Optional[str] = None):
         self._repo = repo
         self._check_repo()
 
         self._model = None
         self._tokenizer = None
+        self._is_loaded = False
 
-    def _check_prompt(self, prompt):
-        if prompt is None or len(prompt) <= 0:
-            raise ValueError("prompt must not be none")
+    def _check_prompt(self, prompt: str) -> None:
+        if not prompt or not prompt.strip():
+            raise ValueError("Prompt must not be None or empty")
 
-    def _check_repo(self):
+    def _check_repo(self) -> None:
         if self._repo is None:
             self._repo = "mlx-community/gemma-3-1b-it-bf16"
 
-    def _load_repo(self):
-        if self._repo:
-            self._model, self._tokenizer = load(self._repo)
+    def _load_model(self) -> None:
+        try:
+            if self._repo and not self._is_loaded:
+                self._model, self._tokenizer = load(self._repo)
+                self._is_loaded = True
+        except Exception as e:
+            raise RuntimeError(f"Failed to load model from {self._repo}: {str(e)}")
 
-    def generate(self, prompt):
-        self._check_prompt(prompt)
-        
-        messages = [{"role": "user", "content": prompt}]
-        
-        if self._repo:
-            self._model, self._tokenizer = load(self._repo)
-            
-        if self._tokenizer is not None and self._model is not None:
-            prompt = self._tokenizer.apply_chat_template(
+    def generate(self, prompt: str) -> Optional[str]:
+        try:
+            self._check_prompt(prompt)
+            self._load_model()
+
+            if self._model is None or self._tokenizer is None:
+                raise RuntimeError("Model or tokenizer not properly loaded")
+
+            messages = [{"role": "user", "content": prompt}]
+
+            formatted_prompt = self._tokenizer.apply_chat_template(
                 messages, add_generation_prompt=True
             )
 
             result = []
-
             for response in stream_generate(
-                self._model, self._tokenizer, prompt, max_tokens=512
+                self._model, self._tokenizer, formatted_prompt, max_tokens=512
             ):
-                # print(response.text, end="", flush=True)
                 result.append(response.text)
 
             return "".join(result)
 
+        except ValueError as e:
+            raise
+        except RuntimeError as e:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"Unexpected error during text generation: {str(e)}")
 
-# def main():
-#     repo = "mlx-community/gemma-3-1b-it-bf16"
-#     model, tokenizer = load(repo)
+    @property
+    def is_loaded(self) -> bool:
+        return self._is_loaded
 
-#     prompt = "Write a story about Einstein"
-
-#     messages = [{"role": "user", "content": prompt}]
-#     prompt = tokenizer.apply_chat_template(messages, add_generation_prompt=True)
-
-#     for response in stream_generate(model, tokenizer, prompt, max_tokens=512):
-#         print(response.text, end="", flush=True)
-#     print()
-
-
-if __name__ == "__main__":
-    llm = Llm()
-
-    test = llm.generate("Write a story about Einstein")
-
-    print(test)
+    @property
+    def repo(self) -> str:
+        return self._repo
