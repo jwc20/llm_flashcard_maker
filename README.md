@@ -1,5 +1,7 @@
 # llm_flashcard_maker
 
+- [fixing data problems with llm](https://www.subsystem.ai/blog/fixing-data-problems-with-large-language-models-a-practical-guide)
+
 - [fastapi and htmx](https://testdriven.io/blog/fastapi-htmx/)
 - [mlx-lm](https://github.com/ml-explore/mlx-lm?tab=readme-ov-file)
 - [Fine-Tuning Gemma 3 1B to Build a Tool-Calling Agent](https://www.linkedin.com/pulse/fine-tuning-gemma-3-1b-build-tool-calling-agent-mihir-jha--nqrof/)
