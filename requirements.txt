@@ -13,6 +13,7 @@ annotated-types==0.7.0
 anyio==4.10.0
     # via
     #   httpx
+    #   openai
     #   starlette
     #   watchfiles
 attrs==25.3.0
@@ -40,6 +41,8 @@ dill==0.3.8
     # via
     #   datasets
     #   multiprocess
+distro==1.9.0
+    # via openai
 dnspython==2.7.0
     # via email-validator
 email-validator==2.2.0
@@ -79,6 +82,7 @@ httpx==0.28.1
     # via
     #   fastapi
     #   fastapi-cloud-cli
+    #   openai
 huggingface-hub==0.34.4
     # via
     #   datasets
@@ -96,6 +100,8 @@ jinja2==3.1.6
     #   llm-flashcard-maker (pyproject.toml)
     #   fastapi
     #   mlx-lm
+jiter==0.10.0
+    # via openai
 jsonpickle==4.1.1
     # via llm-flashcard-maker (pyproject.toml)
 markdown==3.8.2
@@ -126,6 +132,8 @@ numpy==2.3.2
     #   mlx-lm
     #   pandas
     #   transformers
+openai==1.101.0
+    # via llm-flashcard-maker (pyproject.toml)
 orjson==3.11.2
     # via anki
 packaging==25.0
@@ -150,6 +158,7 @@ pydantic==2.11.7
     #   llm-flashcard-maker (pyproject.toml)
     #   fastapi
     #   fastapi-cloud-cli
+    #   openai
 pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
@@ -198,7 +207,9 @@ shellingham==1.5.4
 six==1.17.0
     # via python-dateutil
 sniffio==1.3.1
-    # via anyio
+    # via
+    #   anyio
+    #   openai
 starlette==0.47.2
     # via fastapi
 tokenizers==0.21.4
@@ -208,6 +219,7 @@ tqdm==4.67.1
     #   datasets
     #   huggingface-hub
     #   mlx-lm
+    #   openai
     #   transformers
 transformers==4.55.4
     # via mlx-lm
@@ -222,6 +234,7 @@ typing-extensions==4.14.1
     #   anyio
     #   fastapi
     #   huggingface-hub
+    #   openai
     #   pydantic
     #   pydantic-core
     #   rich-toolkit
