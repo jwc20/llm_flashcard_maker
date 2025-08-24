@@ -168,7 +168,9 @@ pysocks==1.7.1
 python-dateutil==2.9.0.post0
     # via pandas
 python-dotenv==1.1.1
-    # via uvicorn
+    # via
+    #   llm-flashcard-maker (pyproject.toml)
+    #   uvicorn
 python-multipart==0.0.20
     # via fastapi
 pytz==2025.2

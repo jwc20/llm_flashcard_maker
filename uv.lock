@@ -602,6 +602,7 @@ dependencies = [
     { name = "mlx-lm", extra = ["train"] },
     { name = "openai" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
 ]
 
 [package.metadata]
@@ -615,6 +616,7 @@ requires-dist = [
     { name = "mlx-lm", extras = ["train"], specifier = ">=0.26.3" },
     { name = "openai", specifier = ">=1.101.0" },
     { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "python-dotenv", specifier = ">=1.1.1" },
 ]
 
 [[package]]
