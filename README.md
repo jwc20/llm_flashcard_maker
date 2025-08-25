@@ -11,7 +11,7 @@
 
 
 
-
+- [qdrant pdf retrieval](https://qdrant.tech/documentation/advanced-tutorials/pdf-retrieval-at-scale/)
 - [qdrant faq question answering](https://qdrant.tech/articles/faq-question-answering/)
 - [fastapi and htmx](https://testdriven.io/blog/fastapi-htmx/)
 - [mlx-lm](https://github.com/ml-explore/mlx-lm?tab=readme-ov-file)
