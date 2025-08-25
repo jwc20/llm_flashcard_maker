@@ -98,7 +98,7 @@ class Llm:
         except Exception as e:
             raise RuntimeError(f"Failed to load model from {self._repo}: {str(e)}")
 
-    def generate(self, system_prompt: str, prompt: str):
+    def generate(self, system_prompt: str, prompt: str) -> LlmOutput:
         try:
             self._check_prompt(prompt)
             self._load_model()
@@ -118,14 +118,43 @@ class Llm:
 
             result = []
 
+            
             for response in stream_generate(
                     self._model, self._tokenizer, formatted_prompt, max_tokens=512
             ):
-                print(response.text, end="", flush=True)
+                # print(response.text, end="", flush=True)
+                if response.text == "<end_of_turn>":
+                    break
                 result.append(response.text)
+                
+            
+            print("before", result)
+            
+            positions_to_remove = []
+            for i in range(len(result)):
+                if i > 0 and result[i] == "json" and result[i-1] == "```":
+                    positions_to_remove.append(i-1)
+                    positions_to_remove.append(i)
+                elif i > 0 and result[i] == "```":
+                    positions_to_remove.append(i)
+                elif i > 0 and (result[i] == "\n" or result[i] == "<end_of_turn>"):
+                    positions_to_remove.append(i)
+                    
+            for i in reversed(positions_to_remove):
+                del result[i]
+                
+            result = "".join(result)
+                    
+                
+            
+            print("after", result)
+            
+            result_data = jsonpickle.decode(result)
+            print("result data", result_data)
+            
 
             
-            return "".join(result)
+            return LlmOutput.model_validate(result_data)
 
             # return LlmOutput.model_validate(result_data)
         except ValueError as e:
@@ -150,5 +179,19 @@ if __name__ == "__main__":
     _prompt = "What is the process of photosynthesis in plants?"
 
     data = llm.generate(SYSTEM_PROMPT, _prompt)
-    people = data
-    print(jsonpickle.encode(people, indent=4))
+
+    print(" ")
+    print("######")
+    print("######")
+    print("data", data)
+    
+    print("######")
+    print("######")
+    print("######")
+    
+    print("backside (definition)", jsonpickle.decode(data.back))
+    
+    print("references", [jsonpickle.decode(ref) for ref in data.references])
+    
+    print("examples", [jsonpickle.decode(ex) for ex in data.examples])
+    
