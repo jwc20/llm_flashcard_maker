@@ -2,6 +2,59 @@ import jsonpickle
 from mlx_lm import load, stream_generate
 from pydantic import BaseModel
 
+
+# SYSTEM_PROMPT = """
+# Create an Anki flashcard JSON from user-provided text (the "source"), using only the information in that input to generate the back side (answer) based strictly on textbook, article, or similar content. The back side must be concise—include only the essential, directly relevant information to answer the implied question or explain the concept, avoiding elaboration, unnecessary background, or extraneous detail.
+# 
+# Always reason step by step before generating the back side, identifying necessary content and documenting your logic. Do not infer or add content not present in the source. Add references (e.g., citation to section or page if provided in source) and examples if relevant for the concept.
+# 
+# Proceed as follows:
+# - Analyze the provided "source" text and determine the minimal essential information necessary to answer or explain it.
+# - Document the logical, step-by-step reasoning for deciding what is strictly required for the backside.
+# - Ensure your "back" answer is as brief as accuracy allows while still being clear and educational. Do not include background, history, motivation, or extra explanation.
+# - Next, formulate the backside of the Anki card, ensuring maximum conciseness, completeness, and alignment with educational goals.
+# - Add references ("as stated in source, section X") if available, and at least one tightly focused example in the "examples" field if it helps clarify—otherwise leave empty.
+# - Output must be a JSON object as described below.
+# - Output order: present all reasoning steps first; only then output the required JSON object.
+# 
+# **Expected Output Format:**
+# - Output a single JSON object, containing:
+#    - "back": [the concise, clear backside answer based only on the provided "source" text]
+#    - "references": [list of explicit source references, or empty list if none can be identified]
+#    - "examples": [list of concise examples to aid understanding, or empty list if not relevant]
+# 
+# **Include this concise-answer example:**
+# Example Input (source):
+# "When was Java released and who released it? Java 1.0 was released in 1996 by Sun Microsystems, initially developed to help write programs that run on appliances and electronic devices, which were increasingly becoming more complex. The need arose from the potential for memory errors and security vulnerabilities in existing languages like C and C++, where programmers could miss critical issues. Java’s core strength lies in its automatic memory management, which inherently avoids many of these problems. During Java’s development, it explored web-based applets to enable dynamic content on web pages, greatly increasing its adoption. Today, Java is a general-purpose language used to create standalone applications for conventional computers, and it powers billions of devices worldwide."
+# 
+# **Reasoning steps:**
+# 1. Identify the direct question: "When was Java released and who released it?"
+# 2. Locate the information that directly answers the question: "Java 1.0 was released in 1996 by Sun Microsystems."
+# 3. Ignore all background, motivation, and additional details, as they are not asked for.
+# 4. No clear examples or references indicated in the source.
+# 
+# **JSON Output:**
+# {
+#   "back": "Java 1.0 was released in 1996 by Sun Microsystems.",
+#   "references": [],
+#   "examples": []
+# }
+# 
+# (For real use cases, examples and references should match the specificity and content of the source, but only include concise examples if they directly clarify the main answer.)
+# 
+# **Important Considerations:**
+# - The "back" field must be as concise as possible, including only the information that directly answers the card's implied question—do not include additional background, context, or expanded explanations.
+# - Never infer, elaborate, or add information not present in the source text.
+# - Reasoning must always explicitly precede the JSON output.
+# - The JSON output must not be wrapped in code blocks or any other formatting.
+# - If references or concise examples are not possible, use empty lists.
+# - Always deliver in the required JSON format with the order: reasoning, then JSON object.
+# 
+# Your primary objective is to generate a concise, accurate backside for an Anki flashcard based strictly and only on the user's provided text, performing explicit reasoning first, then outputting the result in the required JSON format.
+# 
+# """
+
+
 SYSTEM_PROMPT = """
 Create an Anki flashcard JSON from user-provided text (the "source"), using only the information in that input to generate the back side (answer) based on textbook, article, or similar content. Always reason step by step about what is needed to create a high-quality, educationally useful answer before producing a clear, concise backside. Add references (e.g., citation to section or page if provided in source), and examples if relevant for the concept.
 
@@ -50,6 +103,7 @@ Example Input (source):
 
 **Reminder:**  
 Your task is to generate a clear, accurate backside for an Anki flashcard only using the user's provided text, with explicit reasoning before output, always delivering in the required JSON format.
+
 """
 
 class LlmOutput(BaseModel):
@@ -126,6 +180,8 @@ class Llm:
             for response in stream_generate(**generate_kwargs):
                 if response.text == "<end_of_turn>":
                     break
+                if "\n" in response.text:
+                    response.text = response.text.replace("\n", " ")
                 result.append(response.text)
 
             positions_to_remove = []
@@ -140,6 +196,7 @@ class Llm:
 
             for i in reversed(positions_to_remove):
                 del result[i]
+
 
             result = "".join(result)
 
@@ -165,6 +222,13 @@ class Llm:
             max_tokens: int = 512,
     ) -> list[LlmOutput]:
         results = []
+
+        if system_prompt == "":
+            system_prompt = None
+            
+        # clean up source text
+        source_input = source_input.replace("\n", " ").strip()
+        
 
         for i, prompt in enumerate(prompts):
             try:
