@@ -52,8 +52,8 @@ Example Input (source):
 Your task is to generate a clear, accurate backside for an Anki flashcard only using the user's provided text, with explicit reasoning before output, always delivering in the required JSON format.
 """
 
-
 class LlmOutput(BaseModel):
+    front: str
     back: str
     references: list[str]
     examples: list[str]
@@ -79,17 +79,26 @@ class Llm:
     def _load_model(self) -> None:
         try:
             if self._repo and not self._is_loaded:
-                self._model, self._tokenizer = load(self._repo, tokenizer_config={"eos_token": "<end_of_turn>"})
+                self._model, self._tokenizer = load(
+                    self._repo,
+                    tokenizer_config={"eos_token": "<end_of_turn>"}
+                )
                 # self._model, self._tokenizer = load(self._repo, adapter_path="../data_anomaly_adapters")
                 self._is_loaded = True
+
         except Exception as e:
             raise RuntimeError(f"Failed to load model from {self._repo}: {str(e)}")
 
-    def generate(self, source_input: str, prompt: str, system_prompt: str | None = None) -> LlmOutput:
+    def generate(
+            self,
+            source_input: str,
+            prompt: str,
+            system_prompt: str | None = None,
+            max_tokens: int = 512,
+    ) -> LlmOutput:
         try:
             self._check_prompt(prompt)
             self._load_model()
-
             if self._model is None or self._tokenizer is None:
                 raise RuntimeError("Model or tokenizer not properly loaded")
 
@@ -107,9 +116,14 @@ class Llm:
             )
 
             result = []
-            for response in stream_generate(
-                    self._model, self._tokenizer, formatted_prompt, max_tokens=512
-            ):
+            generate_kwargs = {
+                "model": self._model,
+                "tokenizer": self._tokenizer,
+                "prompt": formatted_prompt,
+                "max_tokens": max_tokens
+            }
+
+            for response in stream_generate(**generate_kwargs):
                 if response.text == "<end_of_turn>":
                     break
                 result.append(response.text)
@@ -128,7 +142,13 @@ class Llm:
                 del result[i]
 
             result = "".join(result)
-            result_data = jsonpickle.decode(result)
+
+            try:
+                result_data = jsonpickle.decode(result)
+            except Exception as json_error:
+                raise RuntimeError(f"Error decoding JSON: {str(json_error)}")
+
+            result_data["front"] = prompt
             return LlmOutput.model_validate(result_data)
         except ValueError as e:
             raise
@@ -137,6 +157,39 @@ class Llm:
         except Exception as e:
             raise RuntimeError(f"Unexpected error during text generation: {str(e)}")
 
+    def generate_batch(
+            self,
+            source_input: str,
+            prompts: list[str],
+            system_prompt: str | None = None,
+            max_tokens: int = 512,
+    ) -> list[LlmOutput]:
+        results = []
+
+        for i, prompt in enumerate(prompts):
+            try:
+                result = self.generate(
+                    source_input=source_input,
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    max_tokens=max_tokens,
+                )
+
+                result = LlmOutput(
+                    front=result.front,
+                    back=result.back,
+                    references=result.references,
+                    examples=result.examples
+                )
+
+                results.append(result)
+
+            except Exception as e:
+                print(f"Error generating flashcard {i + 1}: {e}")
+                continue
+
+        return results
+
     @property
     def is_loaded(self) -> bool:
         return self._is_loaded
@@ -144,25 +197,3 @@ class Llm:
     @property
     def repo(self) -> str:
         return self._repo
-
-# if __name__ == "__main__":
-# 
-#     llm = Llm()
-#     _prompt = "What is the process of photosynthesis in plants?"
-# 
-#     data = llm.generate(SYSTEM_PROMPT, _prompt)
-# 
-#     print(" ")
-#     print("######")
-#     print("######")
-#     print("data", data)
-#     
-#     print("######")
-#     print("######")
-#     print("######")
-#     
-#     print("backside (definition)", jsonpickle.decode(data.back))
-#     
-#     print("references", [jsonpickle.decode(ref) for ref in data.references])
-#     
-#     print("examples", [jsonpickle.decode(ex) for ex in data.examples])
