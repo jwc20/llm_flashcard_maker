@@ -1,7 +1,6 @@
 import jsonpickle
 from pydantic import BaseModel
 
-
 SYSTEM_PROMPT = """
 Create an Anki flashcard JSON from user-provided text (the "source"), using only the information in that input to generate the back side (answer) based on textbook, article, or similar content. Always reason step by step about what is needed to create a high-quality, educationally useful answer before producing a clear, concise backside. Add references (e.g., citation to section or page if provided in source), and examples if relevant for the concept.
 
@@ -53,6 +52,7 @@ Your task is to generate a clear, accurate backside for an Anki flashcard only u
 
 """
 
+
 class LlmOutput(BaseModel):
     front: str
     back: str
@@ -97,9 +97,13 @@ class Llm:
             self,
             source_input: str,
             prompt: str,
-            system_prompt: str | None = None,
-            max_tokens: int = 512,
+            # system_prompt: str | None = None,
+            # max_tokens: int = 512,
     ) -> LlmOutput:
+        
+        system_prompt = SYSTEM_PROMPT
+        max_tokens = 512
+        
         try:
             self._check_prompt(prompt)
             self._load_model()
@@ -147,7 +151,6 @@ class Llm:
             for i in reversed(positions_to_remove):
                 del result[i]
 
-
             result = "".join(result)
 
             try:
@@ -168,25 +171,22 @@ class Llm:
             self,
             source_input: str,
             prompts: list[str],
-            system_prompt: str | None = None,
-            max_tokens: int = 512,
+            # system_prompt: str | None = None,
+            # max_tokens: int = 512,
     ) -> list[LlmOutput]:
         results = []
+        # if system_prompt == "":
+        #     system_prompt = None
 
-        if system_prompt == "":
-            system_prompt = None
-            
-        # clean up source text
         source_input = source_input.replace("\n", " ").strip()
-        
 
         for i, prompt in enumerate(prompts):
             try:
                 result = self.generate(
                     source_input=source_input,
                     prompt=prompt,
-                    system_prompt=system_prompt,
-                    max_tokens=max_tokens,
+                    # system_prompt=system_prompt,
+                    # max_tokens=max_tokens,
                 )
 
                 result = LlmOutput(
@@ -195,15 +195,12 @@ class Llm:
                     references=result.references,
                     examples=result.examples
                 )
-
                 results.append(result)
-
             except Exception as e:
                 print(f"Error generating flashcard {i + 1}: {e}")
                 continue
-
         return results
-
+    
     @property
     def is_loaded(self) -> bool:
         return self._is_loaded
