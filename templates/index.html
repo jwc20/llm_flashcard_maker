@@ -67,6 +67,7 @@
         hx-target="#results-container"
         hx-swap="innerHTML"
         hx-indicator="#loading-spinner"
+        id="flashcard-form"
 >
     <label for="source_text">Source Text (Context):</label>
     <textarea id="source_text" name="source_text" rows="8" required></textarea>
@@ -87,6 +88,32 @@
 <div id="results-container">
     <p>Your generated flashcards will appear here.</p>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const saveFormData = () => {
+            const formData = {
+                sourceText: document.getElementById('source_text').value,
+                questions: document.getElementById('questions').value
+            };
+            localStorage.setItem('flashcardFormData', JSON.stringify(formData));
+        };
+
+        const loadFormData = () => {
+            const savedData = localStorage.getItem('flashcardFormData');
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+                document.getElementById('source_text').value = formData.sourceText;
+                document.getElementById('questions').value = formData.questions;
+            }
+        };
+
+        document.getElementById('source_text').addEventListener('input', saveFormData);
+        document.getElementById('questions').addEventListener('input', saveFormData);
+
+        loadFormData();
+    });
+</script>
 
 </body>
 </html>
