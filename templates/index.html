@@ -1,14 +1,92 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FastAPI + HTMX</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Batch Generator</title>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
-  </head>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
 
-  <body>
-    <button hx-post="/clicked" hx-swap="outerHTML">Click Me</button>
-  </body>
+        form {
+            max-width: 600px;
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-top: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #results-container {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Batch Flashcard Generator</h1>
+
+<form
+        hx-post="/generate-batch"
+        hx-target="#results-container"
+        hx-swap="innerHTML"
+        hx-indicator="#loading-spinner"
+>
+    <label for="source_text">Source Text (Context):</label>
+    <textarea id="source_text" name="source_text" rows="8" required></textarea>
+
+    <label for="questions">Questions (One per line):</label>
+    <textarea id="questions" name="questions" rows="6" required></textarea>
+
+    <button type="submit">Generate Flashcards</button>
+
+    <span id="loading-spinner" class="htmx-indicator" style="margin-left: 10px;">
+            Loading...
+        </span>
+</form>
+
+<hr>
+
+<h2>Results</h2>
+<div id="results-container">
+    <p>Your generated flashcards will appear here.</p>
+</div>
+
+</body>
 </html>

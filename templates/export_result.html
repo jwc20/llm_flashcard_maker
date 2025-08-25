@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Results</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Flashcard Export Ready</h1>
+
+{% if export_data %}
+<p class="success">Successfully prepared **{{ count }}** flashcard(s) for export.</p>
+
+<h2>JSON Export Data (Copy Below)</h2>
+<p>This data can be saved as a `.json` file and potentially imported into other flashcard applications.</p>
+
+<pre>{{ export_data }}</pre>
+
+<p><a href="/"
+      style="display: inline-block; padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Go
+    Back to Generator</a></p>
+
+{% else %}
+<p style="color: red;">No export data available.</p>
+{% endif %}
+
+</body>
+</html>
