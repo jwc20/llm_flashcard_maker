@@ -1,24 +1,35 @@
 from lfm.llm import Llm
 
-
-# source: https://en.wikipedia.org/wiki/Photosynthesis
-SOURCE_INPUT = """
-Photosynthesis is a system of biological processes by which photopigment-bearing autotrophic organisms, such as most plants, algae and cyanobacteria, convert light energy — typically from sunlight — into the chemical energy necessary to fuel their metabolism. The term photosynthesis usually refers to oxygenic photosynthesis, a process that releases oxygen as a byproduct of water splitting. Photosynthetic organisms store the converted chemical energy within the bonds of intracellular organic compounds (complex compounds containing carbon), typically carbohydrates like sugars (mainly glucose, fructose and sucrose), starches, phytoglycogen and cellulose. When needing to use this stored energy, an organism's cells then metabolize the organic compounds through cellular respiration. Photosynthesis plays a critical role in producing and maintaining the oxygen content of the Earth's atmosphere, and it supplies most of the biological energy necessary for complex life on Earth.[2]
-
-Some organisms also perform anoxygenic photosynthesis, which does not produce oxygen. Some bacteria (e.g. purple bacteria) uses bacteriochlorophyll to split hydrogen sulfide as a reductant instead of water, releasing sulfur instead of oxygen, which was a dominant form of photosynthesis in the euxinic Canfield oceans during the Boring Billion.[3][4] Archaea such as Halobacterium also perform a type of non-carbon-fixing anoxygenic photosynthesis, where the simpler photopigment retinal and its microbial rhodopsin derivatives are used to absorb green light and produce a proton (hydron) gradient across the cell membrane, and the subsequent ion movement powers transmembrane proton pumps to directly synthesize adenosine triphosphate (ATP), the "energy currency" of cells. Such archaeal photosynthesis might have been the earliest form of photosynthesis that evolved on Earth, as far back as the Paleoarchean, preceding that of cyanobacteria (see Purple Earth hypothesis).[5]
-
-While the details may differ between species, the process always begins when light energy is absorbed by the reaction centers, proteins that contain photosynthetic pigments or chromophores. In plants, these pigments are chlorophylls (a porphyrin derivative that absorbs the red and blue spectra of light, thus reflecting green) held inside chloroplasts, abundant in leaf cells. In cyanobacteria, they are embedded in the plasma membrane. In these light-dependent reactions, some energy is used to strip electrons from suitable substances, such as water, producing oxygen gas. The hydrogen freed by the splitting of water is used in the creation of two important molecules that participate in energetic processes: reduced nicotinamide adenine dinucleotide phosphate (NADPH) and ATP.
-
-In plants, algae, and cyanobacteria, sugars are synthesized by a subsequent sequence of light-independent reactions called the Calvin cycle. In this process, atmospheric carbon dioxide is incorporated into already existing organic compounds, such as ribulose bisphosphate (RuBP).[6] Using the ATP and NADPH produced by the light-dependent reactions, the resulting compounds are then reduced and removed to form further carbohydrates, such as glucose. In other bacteria, different mechanisms like the reverse Krebs cycle are used to achieve the same end.
-
-The first photosynthetic organisms probably evolved early in the evolutionary history of life using reducing agents such as hydrogen or hydrogen sulfide, rather than water, as sources of electrons.[7] Cyanobacteria appeared later; the excess oxygen they produced contributed directly to the oxygenation of the Earth,[8] which rendered the evolution of complex life possible. The average rate of energy captured by global photosynthesis is approximately 130 terawatts,[9][10][11] which is about eight times the total power consumption of human civilization.[12] Photosynthetic organisms also convert around 100–115 billion tons (91–104 Pg petagrams, or billions of metric tons), of carbon into biomass per year.[13][14] Photosynthesis was discovered in 1779 by Jan Ingenhousz who showed that plants need light, not just soil and water.
+# source: GTx CS1331xI Introduction to Object-Oriented Programming with Java I: Foundations and Syntax Basics (2025-2026)
+SOURCE_INPUT_JAVA = """
+Java 1.0 was officially released in 1996 by a company called Sun Microsystems. It originated out of a need for a language to help write programs that run on appliances and other kinds of electronic devices, which were increasingly getting smarter as computing power became cheaper, faster, and smaller.  Popular languages like C and C++ were already around for many years before Java, and C++ is even Object-Oriented. However, a group of scientists at Sun, who had been experimenting in this space, determined that existing languages needed to be safer in order to be deployed on devices, which sometimes controlled critical aspects of daily life.  
+While C and C++ are very efficient and flexible languages, it is quite possible for even experienced programmers to miss significant memory errors and security bugs that could cause a device to behave inconsistently, or even worse, fail during operation.  Imagine an elevator regularly getting stuck because it could not fully execute the code that navigates it through floors due to a memory leak that its programmer did not notice. Or, if you don’t mind tight spaces, imagine a microwave burning your dinner from your favorite takeout spot (and maybe more) because a memory issue caused it to overheat.
+Although Java does not guarantee flawless programs, its programmers inherently avoid much of the memory and security issues that are common in languages like C and C++. The reason is primarily due to very powerful mechanisms, like automatic memory management, that its creators built into the language.  Such features are therefore inherent to every Java program, regardless of the experience level of the programmer.
+Fortunately, you don’t have to be a device programmer in order to reap such benefits.  During Java’s development, its creators explored several different directions with the language, which greatly increased its scope and popularity.  For example, they noticed the static nature of websites at the time (the 1990s) and developed tools for using Java to write programs that could actually be embedded on web-pages.  Such programs, called applets, helped Java’s adoption by allowing a large population of web programmers to create pages with dynamic content like games, stock tickers, animations, and much more.  
+Over time, Java evolved into a general-purpose programming language allowing programmers to write software applications that run on conventional computers like desktops and laptops. As illustrated in the graphic below, new features have been added to the language since version 1.0, and more are expected due to the significant amount of use and investment that has been put into it.
 """
 
 if __name__ == "__main__":
     llm = Llm()
-    _prompt = "What is the process of photosynthesis in plants?"
-    data = llm.generate(prompt=_prompt, source_input=SOURCE_INPUT)
+    prompts = ["Compared to C and C++, what issues does Java avoid? How does Java avoid those issues?"]
 
-    print(" ")
-    print("data", data)
-    print(" ")
+
+    print("\n" + "=" * 60)
+    print("DIVERSE BATCH WITH EXPLICIT STYLES")
+    print("=" * 60)
+
+    results = llm.generate_batch(
+        source_input=SOURCE_INPUT_JAVA,
+        prompts=prompts,
+    )
+
+    for i, result in enumerate(results, 1):
+        print(f"\nFlashcard {i}:")
+        print(f"  Front: {result.front}")
+        print(" ")
+        print(f"  Back: {result.back}")
+        print(" ")
+        print(f"  References: {result.references}")
+        print(" ")
+        print(f"  Examples: {result.examples}")
+        print(" ")
