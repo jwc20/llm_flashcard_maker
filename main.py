@@ -42,37 +42,16 @@ async def generate_batch(
         if not question_list:
             raise ValueError("No valid questions provided")
 
-        # if system_prompt == "":
-        #     system_prompt = None
-
         loop = asyncio.get_event_loop()
         results = await loop.run_in_executor(
             executor,
             llm.generate_batch,
             source_text,
             question_list,
-            # system_prompt,
-            # max_tokens
         )
 
         if not results:
             raise ValueError("No flashcards generated")
-        # 
-        # 
-        # # results_json = jsonpickle.encode(results)
-        # print(results)
-
-        # [LlmOutput(front='Which of the following statements are true? You may select more than one, but you must select at least one.', back="Java utilizes a hybrid approach: compilation to bytecode and interpretation by a virtual machine (JVM). Bytecode is stored in files with a '.class' extension, allowing for near-machine-level execution without strict assumptions about the processor. Interpreted languages are generally slower due to translation from high-level to low-level. The JVM acts as a bridge, combining compilation and interpretation to provide platform independence and optimizations.  For example, the JVM’s Just-In-Time (JIT) compilation further enhances performance by dynamically translating bytecode to machine code during runtime.", references=['“Java, on the other hand, takes a hybrid approach to offer the benefits of compilation and interpretation.”', "“Java utilizes a hybrid approach: compilation to bytecode and interpretation by a virtual machine (JVM). Bytecode is stored in files with a '.class' extension, allowing for near-machine-level execution without strict assumptions about the processor.”"], examples=['The Java interpreter, often referred to as the JVM, translates bytecode into machine code, enabling Java programs to run on various platforms.  For instance, the JVM’s JIT compilation optimizes the bytecode during runtime, improving performance.'])]
-        # convert above to json
-
-        # results = [LlmOutput(
-        #     front='Which of the following statements are true? You may select more than one, but you must select at least one.',
-        #     back="Java utilizes a hybrid approach: compilation to bytecode and interpretation by a virtual machine (JVM). Bytecode is stored in files with a '.class' extension, allowing for near-machine-level execution without strict assumptions about the processor. Interpreted languages are generally slower due to translation from high-level to low-level. The JVM acts as a bridge, combining compilation and interpretation to provide platform independence and optimizations.  For example, the JVM’s Just-In-Time (JIT) compilation further enhances performance by dynamically translating bytecode to machine code during runtime.",
-        #     references=[
-        #         '“Java, on the other hand, takes a hybrid approach to offer the benefits of compilation and interpretation.”',
-        #         "“Java utilizes a hybrid approach: compilation to bytecode and interpretation by a virtual machine (JVM). Bytecode is stored in files with a '.class' extension, allowing for near-machine-level execution without strict assumptions about the processor.”"],
-        #     examples=[
-        #         'The Java interpreter, often referred to as the JVM, translates bytecode into machine code, enabling Java programs to run on various platforms.  For instance, the JVM’s JIT compilation optimizes the bytecode during runtime, improving performance.'])]
 
         flashcards_data = [r.model_dump() for r in results]
         flashcards_json = jsonpickle.dumps(flashcards_data)
@@ -111,7 +90,6 @@ async def export_flashcards(
 ):
     try:
         flashcards = jsonpickle.loads(flashcards_json)
-
         export_data = {
             "flashcards": flashcards,
             "total": len(flashcards)
