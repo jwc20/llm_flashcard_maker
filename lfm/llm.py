@@ -20,17 +20,6 @@ Proceed as follows:
   - "references": [list of explicit source references, or empty list if none can be identified]
   - "examples": [list of examples to aid understanding, or empty list if not relevant]
 
-**Include this example:**
-
-Example Input (source):  
-"The process of photosynthesis in plants converts carbon dioxide and water into glucose and oxygen using sunlight as the energy source."
-
-**Reasoning steps:**  
-1. Identify main process (photosynthesis).
-2. Determine the steps involved: carbon dioxide + water + sunlight → glucose + oxygen.
-3. Limit answer to only what is stated, do not elaborate outside the provided details.
-4. Example may involve a specific plant being exposed to sunlight.
-
 
 **Important Considerations:**
 
@@ -39,7 +28,7 @@ Example Input (source):
 - The JSON output must not be wrapped in code blocks or any other formatting.
 - If references/examples are not possible, return an empty list for each.
 
-**Reminder:**  
+**Reminder:**
 Your task is to generate a clear, accurate backside for an Anki flashcard only using the user's provided text, with explicit reasoning before output, always delivering in the required JSON format.
 
 """
@@ -48,7 +37,8 @@ Your task is to generate a clear, accurate backside for an Anki flashcard only u
 SYSTEM_PROMPT_QUESTION = """
 Write study questions for a given source text, suitable for the front (question) side of Anki flashcards.
 
-- Read and understand the source text provided.
+- Analyze the provided "source" text and determine the essential information necessary to answer or explain it.
+- Think through and document the logical steps or key points needed for an accurate response. Do not include information not present or infer extra content not directly supported by the source.
 - Identify key facts, core concepts, definitions, and important details within the text.
 - For each key point, generate a clear and concise question that prompts recall or understanding of that information. Use various question formats (e.g., "What is...?", "How does...?", "Why...?", "List...") as appropriate for the extracted information.
 - Each question should be specific, unambiguous, and designed to effectively test comprehension or memory of the material.
@@ -57,60 +47,40 @@ Write study questions for a given source text, suitable for the front (question)
 - Think step-by-step about which facts are most worth remembering or understanding before producing your questions.
 - Continue until all main ideas or facts in the source have corresponding questions.
 
-**Output Format:**  
+**Output Format:**
 A numbered list of questions. Each item is a single study question, phrased appropriately for the front of an Anki flashcard.
 
-**Example:**  
 
-**Input source text:**  
-_The mitochondria is an organelle found in most eukaryotic cells. It is often referred to as the powerhouse of the cell because it produces most of the cell's energy in the form of ATP._
-
-**Output:**  
-1. What is the function of mitochondria in eukaryotic cells?  
-2. Why is the mitochondria known as the "powerhouse of the cell"?  
-3. In what form does the mitochondria provide energy to the cell?
-
-(If working with more complex or longer source texts, generate more questions to cover all main facts and concepts.)
-
-**Important Reminders:**  
-- Focus only on the question side for each flashcard.  
-- Cover all essential details from the provided source.  
+**Important Reminders:**
+- Focus only on the question side for each flashcard.
+- Cover all essential details from the provided source.
 - Use clear, specific, and exam-relevant phrasing for each question.
 
 """
 
 
 SYSTEM_PROMPT_BULLET = """
-Revise the backside of Anki flashcards to make definitions more concise and easier to digest, formatting each definition as clear bullet points.  
-Focus on removing unnecessary words, simplifying language, and breaking down complex explanations into discrete, easy-to-understand bullet points.  
-Maintain all essential information while increasing clarity and brevity.  
+Revise the definition and make it more concise and easier to digest, formatting each definition as clear bullet points.
+Focus on removing unnecessary words, simplifying language, and breaking down complex explanations into discrete, easy-to-understand bullet points.
+Maintain all essential information while increasing clarity and brevity.
 Before finalizing, review to ensure no key facts are omitted and that the card remains accurate and helpful for studying.
 
-**Output Format:**  
+Analyze the provided input text and determine the essential information necessary to answer or explain it.
+Think through and document the logical steps or key points needed for an accurate response. Do not include information not present or infer extra content not directly supported by the source.
+
+**Output Format:**
 - Provide the revised definition only, formatted as a bulleted list.
 - Keep all content in plain text, no markdown formatting needed unless specifically requested.
 
-**Example Input:**  
-Original backside:  
-A mitochondrion is an organelle found in large numbers in most cells, in which the biochemical processes of respiration and energy production occur. It has a double membrane, the inner part of which is folded inward to form layers (cristae).
-
-**Example Output:**  
-- Organelle present in most cells  
-- Site of respiration and energy production  
-- Surrounded by a double membrane  
-- Inner membrane folded into cristae
-
-(For real examples, expect 3–7 bullets capturing the key facts, concisely phrased.)
-
-**Important:**  
+**Important:**
 - Do not alter the card’s intended meaning or lose essential information.
 - Be sure to use simple, direct language and short phrases.
 - Always use bullet points for each discrete fact or concept.
 
 ---
 
-**Reminder:**  
-Edit the backside of Anki flashcards so that definitions become more concise, digestible, and clearly presented as bullet points, while retaining all critical information.
+**Reminder:**
+Edit the definition so that it become more concise, digestible, and clearly presented as bullet points, while retaining all critical information.
 
 """
 
@@ -238,7 +208,7 @@ class Llm:
     ) -> list[LlmOutput]:
         results = []
         # if system_prompt == "":
-        #     system_prompt = None
+        #      system_prompt = None
 
         source_input = source_input.replace("\n", " ").strip()
 
@@ -263,11 +233,83 @@ class Llm:
                 continue
         return results
 
-    def summarize(self):
-        pass
+    def summarize(self, text_to_summarize: str) -> str:
+        """
+        Summarizes a given text into concise, bulleted points.
+        This method uses the SYSTEM_PROMPT_BULLET to guide the summarization.
+        """
+        system_prompt = SYSTEM_PROMPT_BULLET
 
-    def create_question(self):
-        pass
+        try:
+            self._load_model()
+            if self._model is None or self._tokenizer is None:
+                raise RuntimeError("Model or tokenizer not properly loaded")
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text_to_summarize},
+            ]
+
+            formatted_prompt = self._tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True
+            )
+
+            result = []
+            generate_kwargs = {
+                "model": self._model,
+                "tokenizer": self._tokenizer,
+                "prompt": formatted_prompt,
+                "max_tokens": 512,
+            }
+
+            for response in self._stream_generate(**generate_kwargs):
+                if response.text == "<end_of_turn>":
+                    break
+                result.append(response.text)
+
+            return "".join(result).strip()
+
+        except Exception as e:
+            raise RuntimeError(f"Error summarizing text: {str(e)}")
+
+    def create_question(self, source_text: str) -> str:
+        """
+        Creates a numbered list of study questions based on the provided source text.
+        This method uses the SYSTEM_PROMPT_QUESTION to guide the question generation.
+        """
+        system_prompt = SYSTEM_PROMPT_QUESTION
+
+        try:
+            self._load_model()
+            if self._model is None or self._tokenizer is None:
+                raise RuntimeError("Model or tokenizer not properly loaded")
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": source_text},
+            ]
+
+            formatted_prompt = self._tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True
+            )
+
+            result = []
+            generate_kwargs = {
+                "model": self._model,
+                "tokenizer": self._tokenizer,
+                "prompt": formatted_prompt,
+                "max_tokens": 512,
+            }
+
+            for response in self._stream_generate(**generate_kwargs):
+                if response.text == "<end_of_turn>":
+                    break
+                result.append(response.text)
+
+            return "".join(result).strip()
+
+        except Exception as e:
+            raise RuntimeError(f"Error creating questions: {str(e)}")
 
     @property
     def is_loaded(self) -> bool:
