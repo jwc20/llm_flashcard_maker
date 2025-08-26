@@ -76,13 +76,13 @@ async def index(request: Request):
 
 @app.post("/generate-batch", response_class=HTMLResponse)
 async def generate_batch(
-        request: Request,
-        session: SessionDep,
-        source_text: str = Form(...),
-        questions: str = Form(...),
+    request: Request,
+    session: SessionDep,
+    source_text: str = Form(...),
+    questions: str = Form(...),
 ):
     try:
-        question_list = [q.strip() for q in questions.split('\n') if q.strip()]
+        question_list = [q.strip() for q in questions.split("\n") if q.strip()]
 
         if not question_list:
             raise ValueError("No valid questions provided")
@@ -101,7 +101,7 @@ async def generate_batch(
         flashcards_data = []
         for r in results:
             data = r.model_dump()
-            data['id'] = uuid.uuid4()
+            data["id"] = uuid.uuid4()
             flashcards_data.append(data)
             db_flashcard = Flashcard.model_validate(data)
             session.add(db_flashcard)
@@ -109,7 +109,15 @@ async def generate_batch(
         session.commit()
 
         flashcards_json = jsonpickle.dumps(
-            [{"front": f.front, "back": f.back, "references": f.references, "examples": f.examples} for f in results]
+            [
+                {
+                    "front": f.front,
+                    "back": f.back,
+                    "references": f.references,
+                    "examples": f.examples,
+                }
+                for f in results
+            ]
         )
         flashcards_json_escaped = html.escape(flashcards_json)
 
@@ -140,30 +148,91 @@ async def generate_batch(
     except ValueError as e:
         return HTMLResponse(content=f"<div style='color: red;'>Error: {str(e)}</div>")
     except Exception as e:
-        return HTMLResponse(content=f"<div style='color: red;'>An unexpected error occurred: {str(e)}</div>")
+        return HTMLResponse(
+            content=f"<div style='color: red;'>An unexpected error occurred: {str(e)}</div>"
+        )
 
 
 @app.post("/export-flashcards", response_class=HTMLResponse)
-async def export_flashcards(
-        request: Request,
-        flashcards_json: str = Form(...)
-):
+async def export_flashcards(request: Request, flashcards_json: str = Form(...)):
     try:
         flashcards = jsonpickle.loads(flashcards_json)
-        export_data = {
-            "flashcards": flashcards,
-            "total": len(flashcards)
-        }
+        export_data = {"flashcards": flashcards, "total": len(flashcards)}
 
         return templates.TemplateResponse(
             "export_result.html",
             {
                 "request": request,
                 "export_data": jsonpickle.dumps(export_data, indent=2),
-                "count": len(flashcards)
-            }
+                "count": len(flashcards),
+            },
         )
     except jsonpickle.JSONDecodeError as e:
-        return HTMLResponse(f"<div class='text-red-500'>Export failed: Invalid JSON data.</div>")
+        return HTMLResponse(
+            f"<div class='text-red-500'>Export failed: Invalid JSON data.</div>"
+        )
     except Exception as e:
         return HTMLResponse(f"<div class='text-red-500'>Export failed: {str(e)}</div>")
+
+
+@app.post("/summarize", response_class=HTMLResponse)
+async def summarize_text(request: Request, source_text: str = Form(...)):
+    if not source_text or not source_text.strip():
+        return HTMLResponse(
+            content="<div style='color: red;'>Error: Source text cannot be empty.</div>"
+        )
+
+    loop = asyncio.get_running_loop()
+    try:
+        summarized_text = await loop.run_in_executor(
+            executor, llm.summarize, source_text
+        )
+
+        html_content = "<h3>Summarized Content</h3>"
+        html_content += "<ul>"
+        for line in summarized_text.split("\n"):
+            line = line.strip()
+            if line.startswith("-"):
+                html_content += f"<li>{html.escape(line[1:].strip())}</li>"
+            else:
+                html_content += f"<li>{html.escape(line)}</li>"
+        html_content += "</ul>"
+
+        return HTMLResponse(content=html_content)
+
+    except Exception as e:
+        return HTMLResponse(
+            content=f"<div style='color: red;'>Error summarizing text: {str(e)}</div>"
+        )
+
+
+@app.post("/create-questions", response_class=HTMLResponse)
+async def create_questions(request: Request, source_text: str = Form(...)):
+    if not source_text or not source_text.strip():
+        return HTMLResponse(
+            content="<div style='color: red;'>Error: Source text cannot be empty.</div>"
+        )
+
+    loop = asyncio.get_running_loop()
+    try:
+        questions_text = await loop.run_in_executor(
+            executor, llm.create_question, source_text
+        )
+
+        html_content = "<h3>Generated Questions</h3>"
+        html_content += f"<pre>{html.escape(questions_text)}</pre>"
+
+        html_content += f"""
+            <form hx-post="/generate-batch" hx-target="#flashcard-results-container" hx-swap="innerHTML">
+                <input type="hidden" name="source_text" value="{html.escape(source_text)}">
+                <textarea name="questions" rows="10" cols="50" style="display:none;">{html.escape(questions_text)}</textarea>
+                <button type="submit">Create Flashcards from These Questions</button>
+            </form>
+        """
+
+        return HTMLResponse(content=html_content)
+
+    except Exception as e:
+        return HTMLResponse(
+            content=f"<div style='color: red;'>Error creating questions: {str(e)}</div>"
+        )
