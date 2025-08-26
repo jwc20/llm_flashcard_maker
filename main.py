@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-import json
 import uuid
 import jsonpickle
 from fastapi import FastAPI, Request, Form
@@ -15,20 +14,18 @@ from concurrent.futures import ThreadPoolExecutor
 import html
 from datetime import datetime, timezone
 from lfm import Llm, LlmOutput
-
+from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel, Column, JSON
 
+
 class Flashcard(SQLModel, table=True):
-    id: str | None = Field(default=None, primary_key=True)
-    front: str = Field(index=True) 
+    id: UUID | None = Field(default_factory=uuid4, primary_key=True)
+    front: str = Field(index=True)
     back: str = Field(index=True)
     references: list[str] = Field(default=[], sa_column=Column(JSON))
     examples: list[str] = Field(default=[], sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-
 
 
 sqlite_file_name = "database.db"
@@ -37,8 +34,10 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
+
 
 def get_session():
     with Session(engine) as session:
@@ -68,14 +67,6 @@ class FlashcardRequest(BaseModel):
     questions: str
     system_prompt: str | None = None
     max_tokens: int = 512
-    
-# class Flashcard(SQLModel):
-#     id: str = Field(default=None, primary_key=True)
-#     front: str = Field(index=True) 
-#     back: str = Field(index=True)
-#     references: list[str] = Field(index=True)
-#     examples: list[str] = Field(index=True)
-
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -96,48 +87,43 @@ async def generate_batch(
         if not question_list:
             raise ValueError("No valid questions provided")
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         results = await loop.run_in_executor(
             executor,
             llm.generate_batch,
             source_text,
             question_list,
         )
-        # 
-        # results = [LlmOutput(front='What is java?',
-        #                   back='Java 1.0 was released in 1996 by Sun Microsystems, initially designed to simplify the creation of programs for electronic devices. The need arose from the increasing complexity of these devices and the desire to ensure their reliability, particularly when they controlled critical functions. C and C++ were already established languages, but Sun’s scientists recognized the potential for safety issues in devices that controlled everyday life.  Java’s core strength lies in its automatic memory management, a feature that significantly reduces the risk of memory leaks and security vulnerabilities.  Unlike languages like C and C++, Java’s inherent safety mechanisms are built into the language itself, allowing developers to focus on the logic of their programs rather than worrying about low-level details.  The language’s evolution included tools for embedding dynamic content on web pages, further expanding its reach and utility.  Java’s continued development and adoption demonstrate its enduring value as a versatile and reliable programming language.',
-        #                   references=['Sun Microsystems. (1996). Java 1.0 Release Notes.',
-        #                               'Sun Microsystems. (1996). Java 1.0 Release Notes.'], examples=[
-        #         'For example, when a leaf is exposed to sunlight, it uses carbon dioxide from the air and water from the soil to create glucose and oxygen, with sunlight providing the necessary energy.']), LlmOutput(
-        #     front='What are the advantages of java?',
-        #     back='Java 1.0 was released in 1996 by Sun Microsystems, originating from the need to simplify program creation for electronic devices, which were increasingly complex due to improved computing power.  It emerged from a desire to create a language that could reliably run on devices, mitigating potential issues with memory leaks and security vulnerabilities.  C and C++ were established languages, but Java’s developers prioritized safety, ensuring programs could be deployed on devices.  Java’s core strength lies in its automatic memory management, a feature built into the language that significantly reduces the risk of memory errors and security flaws. Unlike languages like C and C++, Java’s inherent safety mechanisms are built into the language itself.  The language’s evolution included tools for embedding dynamic content on web pages, further expanding its reach and utility.  Java’s continued development and adoption demonstrate its enduring value as a versatile and reliable programming language.',
-        #     references=['Sun Microsystems. (1996). Java 1.0 Release Notes.',
-        #                 'Sun Microsystems. (1996). Java 1.0 Release Notes.'], examples=[
-        #         'For example, when a leaf is exposed to sunlight, it uses carbon dioxide from the air and water from the soil to create glucose and oxygen, with sunlight providing the necessary energy.'])]
 
         if not results:
             raise ValueError("No flashcards generated")
 
-        flashcards_data = [r.model_dump() for r in results]
-        flashcards_json = jsonpickle.dumps(flashcards_data)
-        flashcards_json_escaped = html.escape(flashcards_json)
-
-        
-        for d in flashcards_data:
-            d['id'] = str(uuid.uuid4())
-            db_flashcard = Flashcard.model_validate(d)
+        flashcards_data = []
+        for r in results:
+            data = r.model_dump()
+            data['id'] = uuid.uuid4()
+            flashcards_data.append(data)
+            db_flashcard = Flashcard.model_validate(data)
             session.add(db_flashcard)
+
         session.commit()
+
+        flashcards_json = jsonpickle.dumps(
+            [{"front": f.front, "back": f.back, "references": f.references, "examples": f.examples} for f in results]
+        )
+        flashcards_json_escaped = html.escape(flashcards_json)
 
         html_content = "<h3>Generated Flashcards</h3>"
         html_content += f"<p>Successfully generated {len(results)} flashcard(s).</p>"
         html_content += "<div>"
         for i, flashcard in enumerate(results):
+            escaped_front = html.escape(flashcard.front)
+            escaped_back = html.escape(flashcard.back)
             html_content += f"""
                 <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
                     <h4>Flashcard {i + 1}</h4>
-                    <p><strong>Question:</strong> {flashcard.front}</p>
-                    <p><strong>Answer:</strong> {flashcard.back}</p>
+                    <p><strong>Question:</strong> {escaped_front}</p>
+                    <p><strong>Answer:</strong> {escaped_back}</p>
                 </div>
             """
         html_content += "</div>"
@@ -151,8 +137,10 @@ async def generate_batch(
 
         return HTMLResponse(content=html_content)
 
+    except ValueError as e:
+        return HTMLResponse(content=f"<div style='color: red;'>Error: {str(e)}</div>")
     except Exception as e:
-        return HTMLResponse(content=f"<div style='color: red;'>Error generating flashcards: {str(e)}</div>")
+        return HTMLResponse(content=f"<div style='color: red;'>An unexpected error occurred: {str(e)}</div>")
 
 
 @app.post("/export-flashcards", response_class=HTMLResponse)
@@ -175,5 +163,7 @@ async def export_flashcards(
                 "count": len(flashcards)
             }
         )
+    except jsonpickle.JSONDecodeError as e:
+        return HTMLResponse(f"<div class='text-red-500'>Export failed: Invalid JSON data.</div>")
     except Exception as e:
         return HTMLResponse(f"<div class='text-red-500'>Export failed: {str(e)}</div>")
