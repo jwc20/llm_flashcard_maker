@@ -1,119 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flashcard Batch Generator</title>
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 20px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard Batch Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background-color: #f4f4f9;
+    }
 
-        form {
-            max-width: 600px;
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
+    h1,
+    h2 {
+      color: #333;
+    }
 
-        label {
-            display: block;
-            margin-top: 10px;
-            font-weight: bold;
-        }
+    form {
+      max-width: 700px;
+      margin-bottom: 25px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
 
-        textarea, input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            box-sizing: border-box;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+      color: #555;
+    }
 
-        button {
-            padding: 10px 15px;
-            margin-top: 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+    textarea,
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
 
-        button:hover {
-            background-color: #0056b3;
-        }
+    button {
+      padding: 10px 20px;
+      margin-top: 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
 
-        #results-container {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #eee;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            min-height: 100px;
-        }
-    </style>
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .results-container {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #eee;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      min-height: 100px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+  </style>
 </head>
+
 <body>
+  <h1>Flashcard and Study Aid Generator</h1>
 
-<h1>Batch Flashcard Generator</h1>
+  <hr />
 
-<form
-        hx-post="/generate-batch"
-        hx-target="#results-container"
-        hx-swap="innerHTML"
-        hx-indicator="#loading-spinner"
-        id="flashcard-form"
->
-    <label for="source_text">Source Text (Context):</label>
-    <textarea id="source_text" name="source_text" rows="8" required></textarea>
+  <h2>Generate Flashcards from Questions</h2>
+  <form hx-post="/generate-batch" hx-target="#flashcard-results-container" hx-swap="innerHTML"
+    hx-indicator="#loading-spinner-batch" id="flashcard-form">
+    <label for="source_text_batch">Source Text (Context):</label>
+    <textarea id="source_text_batch" name="source_text" rows="8" required></textarea>
 
-    <label for="questions">Questions (One per line):</label>
-    <textarea id="questions" name="questions" rows="6" required></textarea>
+    <label for="questions_batch">Questions (One per line):</label>
+    <textarea id="questions_batch" name="questions" rows="6" required></textarea>
 
     <button type="submit">Generate Flashcards</button>
-
-    <span id="loading-spinner" class="htmx-indicator" style="margin-left: 10px;">
-            Loading...
-        </span>
-</form>
-
-<hr>
-
-<h2>Results</h2>
-<div id="results-container">
+    <span id="loading-spinner-batch" class="htmx-indicator" style="margin-left: 10px">
+      Loading...
+    </span>
+  </form>
+  <div id="flashcard-results-container" class="results-container">
     <p>Your generated flashcards will appear here.</p>
-</div>
+  </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', (event) => {
-        const saveFormData = () => {
-            const formData = {
-                sourceText: document.getElementById('source_text').value,
-                questions: document.getElementById('questions').value
-            };
-            localStorage.setItem('flashcardFormData', JSON.stringify(formData));
+  <hr />
+
+  <h2>Generate Questions from Text</h2>
+  <form hx-post="/create-questions" hx-target="#questions-results-container" hx-swap="innerHTML"
+    hx-indicator="#loading-spinner-questions">
+    <label for="source_text_questions">Source Text for Questions:</label>
+    <textarea id="source_text_questions" name="source_text" rows="8" required></textarea>
+
+    <button type="submit">Create Questions</button>
+    <span id="loading-spinner-questions" class="htmx-indicator" style="margin-left: 10px">
+      Loading...
+    </span>
+  </form>
+  <div id="questions-results-container" class="results-container">
+    <p>Your generated questions will appear here.</p>
+  </div>
+
+  <hr />
+
+  <h2>Summarize Text</h2>
+  <form hx-post="/summarize" hx-target="#summarize-results-container" hx-swap="innerHTML"
+    hx-indicator="#loading-spinner-summarize">
+    <label for="source_text_summarize">Source Text to Summarize:</label>
+    <textarea id="source_text_summarize" name="source_text" rows="8" required></textarea>
+
+    <button type="submit">Summarize Text</button>
+    <span id="loading-spinner-summarize" class="htmx-indicator" style="margin-left: 10px">
+      Loading...
+    </span>
+  </form>
+  <div id="summarize-results-container" class="results-container">
+    <p>Your summarized text will appear here.</p>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", (event) => {
+      const saveFormData = (formId) => {
+        const form = document.getElementById(formId);
+        const formData = {
+          sourceText: form.querySelector('textarea[name="source_text"]')
+            .value,
+          questions: form.querySelector('textarea[name="questions"]')
+            ? form.querySelector('textarea[name="questions"]').value
+            : "",
         };
+        localStorage.setItem("flashcardFormData", JSON.stringify(formData));
+      };
 
-        const loadFormData = () => {
-            const savedData = localStorage.getItem('flashcardFormData');
-            if (savedData) {
-                const formData = JSON.parse(savedData);
-                document.getElementById('source_text').value = formData.sourceText;
-                document.getElementById('questions').value = formData.questions;
-            }
-        };
+      const loadFormData = () => {
+        const savedData = localStorage.getItem("flashcardFormData");
+        if (savedData) {
+          const formData = JSON.parse(savedData);
+          document.getElementById("source_text_batch").value =
+            formData.sourceText;
+          if (formData.questions) {
+            document.getElementById("questions_batch").value =
+              formData.questions;
+          }
+        }
+      };
 
-        document.getElementById('source_text').addEventListener('input', saveFormData);
-        document.getElementById('questions').addEventListener('input', saveFormData);
+      document
+        .getElementById("flashcard-form")
+        .addEventListener("input", () => saveFormData("flashcard-form"));
 
-        loadFormData();
+      loadFormData();
     });
-</script>
-
+  </script>
 </body>
+
 </html>
