@@ -31,14 +31,6 @@ Example Input (source):
 3. Limit answer to only what is stated, do not elaborate outside the provided details.
 4. Example may involve a specific plant being exposed to sunlight.
 
-**JSON Output:**  
-{
-  "back": "Photosynthesis in plants transforms carbon dioxide and water into glucose and oxygen, with sunlight providing the necessary energy.",
-  "references": ["Sentence from source"],
-  "examples": ["For example, when a leaf is exposed to sunlight, it uses carbon dioxide from the air and water from the soil to create glucose and oxygen."]
-}
-
-(For real use cases, examples and references should match the specificity and content of the source.)
 
 **Important Considerations:**
 
@@ -49,6 +41,76 @@ Example Input (source):
 
 **Reminder:**  
 Your task is to generate a clear, accurate backside for an Anki flashcard only using the user's provided text, with explicit reasoning before output, always delivering in the required JSON format.
+
+"""
+
+
+SYSTEM_PROMPT_QUESTION = """
+Write study questions for a given source text, suitable for the front (question) side of Anki flashcards.
+
+- Read and understand the source text provided.
+- Identify key facts, core concepts, definitions, and important details within the text.
+- For each key point, generate a clear and concise question that prompts recall or understanding of that information. Use various question formats (e.g., "What is...?", "How does...?", "Why...?", "List...") as appropriate for the extracted information.
+- Each question should be specific, unambiguous, and designed to effectively test comprehension or memory of the material.
+- Do NOT include the answer or information that would belong on the back side of the flashcard.
+- If the source text is lengthy, select the most critical or exam-relevant points to generate questions.
+- Think step-by-step about which facts are most worth remembering or understanding before producing your questions.
+- Continue until all main ideas or facts in the source have corresponding questions.
+
+**Output Format:**  
+A numbered list of questions. Each item is a single study question, phrased appropriately for the front of an Anki flashcard.
+
+**Example:**  
+
+**Input source text:**  
+_The mitochondria is an organelle found in most eukaryotic cells. It is often referred to as the powerhouse of the cell because it produces most of the cell's energy in the form of ATP._
+
+**Output:**  
+1. What is the function of mitochondria in eukaryotic cells?  
+2. Why is the mitochondria known as the "powerhouse of the cell"?  
+3. In what form does the mitochondria provide energy to the cell?
+
+(If working with more complex or longer source texts, generate more questions to cover all main facts and concepts.)
+
+**Important Reminders:**  
+- Focus only on the question side for each flashcard.  
+- Cover all essential details from the provided source.  
+- Use clear, specific, and exam-relevant phrasing for each question.
+
+"""
+
+
+SYSTEM_PROMPT_BULLET = """
+Revise the backside of Anki flashcards to make definitions more concise and easier to digest, formatting each definition as clear bullet points.  
+Focus on removing unnecessary words, simplifying language, and breaking down complex explanations into discrete, easy-to-understand bullet points.  
+Maintain all essential information while increasing clarity and brevity.  
+Before finalizing, review to ensure no key facts are omitted and that the card remains accurate and helpful for studying.
+
+**Output Format:**  
+- Provide the revised definition only, formatted as a bulleted list.
+- Keep all content in plain text, no markdown formatting needed unless specifically requested.
+
+**Example Input:**  
+Original backside:  
+A mitochondrion is an organelle found in large numbers in most cells, in which the biochemical processes of respiration and energy production occur. It has a double membrane, the inner part of which is folded inward to form layers (cristae).
+
+**Example Output:**  
+- Organelle present in most cells  
+- Site of respiration and energy production  
+- Surrounded by a double membrane  
+- Inner membrane folded into cristae
+
+(For real examples, expect 3–7 bullets capturing the key facts, concisely phrased.)
+
+**Important:**  
+- Do not alter the card’s intended meaning or lose essential information.
+- Be sure to use simple, direct language and short phrases.
+- Always use bullet points for each discrete fact or concept.
+
+---
+
+**Reminder:**  
+Edit the backside of Anki flashcards so that definitions become more concise, digestible, and clearly presented as bullet points, while retaining all critical information.
 
 """
 
@@ -82,10 +144,10 @@ class Llm:
             if self._repo and not self._is_loaded:
                 # lazy import
                 from mlx_lm import load, stream_generate  # type: ignore
+
                 self._stream_generate = stream_generate  # cache function ref
                 self._model, self._tokenizer = load(
-                    self._repo,
-                    tokenizer_config={"eos_token": "<end_of_turn>"}
+                    self._repo, tokenizer_config={"eos_token": "<end_of_turn>"}
                 )
                 # self._model, self._tokenizer = load(self._repo, adapter_path="../data_anomaly_adapters")
                 self._is_loaded = True
@@ -94,16 +156,16 @@ class Llm:
             raise RuntimeError(f"Failed to load model from {self._repo}: {str(e)}")
 
     def generate(
-            self,
-            source_input: str,
-            prompt: str,
-            # system_prompt: str | None = None,
-            # max_tokens: int = 512,
+        self,
+        source_input: str,
+        prompt: str,
+        # system_prompt: str | None = None,
+        # max_tokens: int = 512,
     ) -> LlmOutput:
-        
+
         system_prompt = SYSTEM_PROMPT
         max_tokens = 512
-        
+
         try:
             self._check_prompt(prompt)
             self._load_model()
@@ -128,7 +190,7 @@ class Llm:
                 "model": self._model,
                 "tokenizer": self._tokenizer,
                 "prompt": formatted_prompt,
-                "max_tokens": max_tokens
+                "max_tokens": max_tokens,
             }
 
             for response in self._stream_generate(**generate_kwargs):
@@ -168,11 +230,11 @@ class Llm:
             raise RuntimeError(f"Unexpected error during text generation: {str(e)}")
 
     def generate_batch(
-            self,
-            source_input: str,
-            prompts: list[str],
-            # system_prompt: str | None = None,
-            # max_tokens: int = 512,
+        self,
+        source_input: str,
+        prompts: list[str],
+        # system_prompt: str | None = None,
+        # max_tokens: int = 512,
     ) -> list[LlmOutput]:
         results = []
         # if system_prompt == "":
@@ -193,14 +255,20 @@ class Llm:
                     front=result.front,
                     back=result.back,
                     references=result.references,
-                    examples=result.examples
+                    examples=result.examples,
                 )
                 results.append(result)
             except Exception as e:
                 print(f"Error generating flashcard {i + 1}: {e}")
                 continue
         return results
-    
+
+    def summarize(self):
+        pass
+
+    def create_question(self):
+        pass
+
     @property
     def is_loaded(self) -> bool:
         return self._is_loaded
